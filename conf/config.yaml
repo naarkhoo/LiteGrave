@@ -1,0 +1,38 @@
+db:
+  technology: milvus
+  host: localhost
+  port: 19530
+  collection:
+    name: imdb
+    schema_description: "Here we are storing IMDB data"
+    consistency_level: Strong
+    index:
+        index_type: IVF_FLAT
+        metric_type: L2
+        params: {nlist: 128}
+        target_field: embeddings
+    fields:
+    - name: pk
+      description: 'this is an id field'
+      dtype: DataType.VARCHAR
+      is_primary: True
+      auto_id: False
+      max_length: 100
+    - name: sentence
+      description: 'sentences to be indexed'
+      dtype: DataType.VARCHAR
+      max_length: 100
+    - name: embeddings
+      description: 'embedding vectors of reference_column'
+      dtype: DataType.FLOAT_VECTOR
+
+embedding:
+  model_name: bert-base-uncased
+
+data:
+  path: data/IMDB-Movie-Data.csv
+  columns:
+    - Title
+    - Year
+    - Genre
+  reference_column: Title # column name to be indexed

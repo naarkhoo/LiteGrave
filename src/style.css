@@ -1,0 +1,24 @@
+/* .title class: Targets elements meant to be titles */
+.title {
+  text-align: center; /* Aligns the text of the title to the center */
+}
+
+/* .logo class: Targets elements meant to be logos */
+.logo {
+  margin: 0 auto;      /* Sets the top and bottom margins to 0 and automatically adjusts left and right margins, centering block elements horizontally */
+  display: block;      /* Changes the display property to block. Block elements take up the full width available and start on a new line */
+}
+
+/* .centered class: Targets elements that need to be centered */
+.centered {
+  display: flex;               /* Uses the flexible box model, a layout model that allows items to be aligned and distributed in complex ways */
+  justify-content: center;     /* Horizontally aligns the flex items at the center of the container */
+  align-items: center;         /* Vertically aligns the flex items at the center of the container */
+  flex-direction: column;      /* Sets the direction of the main axis to run vertically, meaning the flex items will stack in a column */
+}
+
+/* .search-container .stTextInput > div: Targets a specific child div of .stTextInput class inside .search-container class */
+.search-container .stTextInput > div {
+  width: 50%;           /* Sets the width of the search bar to 50% of its parent's width */
+  margin: 0 auto;       /* Sets the top and bottom margins to 0 and automatically adjusts left and right margins, centering the element horizontally */
+}
