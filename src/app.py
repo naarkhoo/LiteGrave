@@ -5,12 +5,15 @@ import os
 from pathlib import Path
 from typing import Optional
 
+import pandas as pd
 import streamlit as st
 
 LOGO_IMAGE = "src/logo.png"
 LOGO_WIDTH = 200
+CSV_FILE_PATH = "data/m44.csv.gz"
 
 
+@st.cache_resource
 def load_css(css_path: str) -> None:
     """Load a CSS file."""
     with open(css_path, "r") as f:
@@ -46,6 +49,14 @@ def img_to_html(img_path: str, width: Optional[int] = None) -> str:
     return img_data
 
 
+# Cache the loading of the CSV file to avoid unnecessary reloads
+@st.cache_resource
+def load_csv_data(file_path: str) -> pd.DataFrame:
+    """Read the CSV file."""
+    df = pd.read_csv(file_path, compression="gzip")
+    return df
+
+
 def main() -> None:
     """Main function of the App."""
     # Set the current working directory (for debugging purposes).
@@ -74,6 +85,13 @@ def main() -> None:
             st.markdown(
                 f'<a href="{result[1]}">{result[0]}</a>', unsafe_allow_html=True
             )
+
+    # Call the function to load the data
+    data = load_csv_data(CSV_FILE_PATH)
+
+    # Use Streamlit to write the DataFrame to the app
+    st.write("Displaying CSV data:")
+    st.dataframe(data)
 
 
 if __name__ == "__main__":
