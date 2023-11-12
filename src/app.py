@@ -11,7 +11,7 @@ import streamlit as st
 LOGO_IMAGE = "src/logo.png"
 LOGO_WIDTH = 200
 CSV_FILE_PATH = "data/m44.csv.gz"
-SHOW_CSV = False
+SHOW_CSV = True
 SINGLE_SEARCH_BAR = False
 LAYOUT2X2 = False
 LAYOUT1X4 = True
@@ -142,11 +142,9 @@ def main() -> None:
                 placeholder="Specify gene or pathway (e.g., P53 signaling)",
             )
 
-    # with col_target:
-
     st.markdown("".join(["<br>"] * 12), unsafe_allow_html=True)
 
-    left_col, col5, col6, right_col = st.columns([5, 2, 2, 5])
+    left_col, col5, col6, right_col = st.columns([5, 1, 1, 5])
     with col5:
         explore_studies_btn = st.button("Explore Studies")
 
@@ -170,6 +168,9 @@ def main() -> None:
     if SHOW_CSV:
         # Call the function to load the data
         data = load_csv_data(CSV_FILE_PATH)
+
+        # Convert the PubMed ID to a string so you avoid the comma separator
+        data = data.astype({"pubmed_id": str})
 
         # Use Streamlit to write the DataFrame to the app
         st.write("Displaying CSV data:")
