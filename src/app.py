@@ -11,6 +11,12 @@ import streamlit as st
 LOGO_IMAGE = "src/logo.png"
 LOGO_WIDTH = 200
 CSV_FILE_PATH = "data/m44.csv.gz"
+SHOW_CSV = False
+SINGLE_SEARCH_BAR = False
+LAYOUT2X2 = False
+LAYOUT1X4 = True
+
+st.set_page_config(page_title="Gene and Cell Study Predictor", layout="wide")
 
 
 @st.cache_resource
@@ -68,30 +74,106 @@ def main() -> None:
     logo_html = img_to_html(LOGO_IMAGE, width=LOGO_WIDTH)
     st.markdown(f'<div class="centered">{logo_html}</div>', unsafe_allow_html=True)
 
+    st.markdown("".join(["<br>"] * 2), unsafe_allow_html=True)
+
     # Centered search bar in the main area.
-    st.markdown('<div class="search-container">', unsafe_allow_html=True)
-    search_query = st.text_input("Search", key="search")
-    st.markdown("</div>", unsafe_allow_html=True)
+    if SINGLE_SEARCH_BAR:
+        st.markdown('<div class="search-container">', unsafe_allow_html=True)
+        search_query = st.text_input("Search", key="search")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    # If a search query is entered
-    if search_query:
-        # add a placeholder
-        # results = search_google(search_query)
-        results = [("Google", "https://google.com")]
+        # If a search query is entered
+        if search_query:
+            # add a placeholder
+            # results = search_google(search_query)
+            results = [("Google", "https://google.com")]
 
-        # Display the search results.
-        st.write("Search results:")
-        for result in results:
-            st.markdown(
-                f'<a href="{result[1]}">{result[0]}</a>', unsafe_allow_html=True
+            # Display the search results.
+            st.write("Search results:")
+            for result in results:
+                st.markdown(
+                    f'<a href="{result[1]}">{result[0]}</a>', unsafe_allow_html=True
+                )
+
+    if LAYOUT1X4:
+        # Creating columns for each input field
+        col_cell_type, col_environment, col_duration, col_target = st.columns(4)
+
+        with col_cell_type:
+            cell_type = st.text_area(
+                "Cell Type", placeholder="Enter the cell type (e.g., HeLa cells)"
             )
 
-    # Call the function to load the data
-    data = load_csv_data(CSV_FILE_PATH)
+        with col_environment:
+            environment = st.text_area(
+                "Environment",
+                placeholder="Describe the environment condition (e.g., hypoxic)",
+            )
 
-    # Use Streamlit to write the DataFrame to the app
-    st.write("Displaying CSV data:")
-    st.dataframe(data)
+        with col_duration:
+            duration = st.text_area(
+                "Duration", placeholder="Experiment duration (e.g., 3 days)"
+            )
+
+        with col_target:
+            target = st.text_area(
+                "Gene/Pathway Target",
+                placeholder="Specify gene or pathway (e.g., P53 signaling)",
+            )
+
+    if LAYOUT2X2:
+        col1, col2 = st.columns(2)
+
+        with col1:
+            cell_type = st.text_area(
+                "Cell Type", placeholder="Enter the cell type (e.g., HeLa cells)"
+            )
+            environment = st.text_area(
+                "Environment",
+                placeholder="Describe the environment condition (e.g., hypoxic)",
+            )
+
+        with col2:
+            duration = st.text_area(
+                "Duration", placeholder="Experiment duration (e.g., 3 days)"
+            )
+            target = st.text_area(
+                "Gene/Pathway Target",
+                placeholder="Specify gene or pathway (e.g., P53 signaling)",
+            )
+
+    # with col_target:
+
+    st.markdown("".join(["<br>"] * 12), unsafe_allow_html=True)
+
+    left_col, col5, col6, right_col = st.columns([5, 2, 2, 5])
+    with col5:
+        explore_studies_btn = st.button("Explore Studies")
+
+    with col6:
+        run_prediction_btn = st.button("Run Prediction")
+
+    if explore_studies_btn:
+        # Logic to show existing studies
+        st.write("Showing studies for:", cell_type, environment, duration, target)
+
+    if run_prediction_btn:
+        # Logic to predict the outcome
+        st.write("Predicting outcome for:", cell_type, environment, duration, target)
+
+    # Ensure that all inputs are provided before any action is taken.
+    if (explore_studies_btn or run_prediction_btn) and not (
+        cell_type and environment and duration and target
+    ):
+        st.error("Please fill in all fields to proceed.")
+
+    if SHOW_CSV:
+        # Call the function to load the data
+        data = load_csv_data(CSV_FILE_PATH)
+
+        # Use Streamlit to write the DataFrame to the app
+        st.write("Displaying CSV data:")
+        st.dataframe(data)
 
 
 if __name__ == "__main__":
