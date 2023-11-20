@@ -13,8 +13,8 @@ LOGO_WIDTH = 200
 CSV_FILE_PATH = "data/m44.csv.gz"
 SHOW_CSV = True
 SINGLE_SEARCH_BAR = False
-LAYOUT2X2 = False
-LAYOUT1X4 = True
+LAYOUT2X2 = True
+LAYOUT1X4 = False
 
 st.set_page_config(page_title="Gene and Cell Study Predictor", layout="wide")
 
