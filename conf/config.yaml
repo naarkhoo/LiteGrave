@@ -29,8 +29,12 @@ db:
 embedding:
   model_name: bert-base-uncased
 
+credentials:
+  path: creds/creds.env
+
 data:
-  path: data/IMDB-Movie-Data.csv
+  path: data/m44.csv.gz
+  indexed_path: data/indexed_m44.csv.gz
   columns:
     - Title
     - Year

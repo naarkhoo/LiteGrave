@@ -1,6 +1,7 @@
 creds/creds.env
 poetry.lock
 src/draft.ipynb
+data/*.csv*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

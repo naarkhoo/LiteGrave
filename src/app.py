@@ -5,8 +5,23 @@ import os
 from pathlib import Path
 from typing import Optional
 
-import pandas as pd
 import streamlit as st
+from langchain.agents.agent_types import AgentType
+from langchain.llms import OpenAI
+from langchain_experimental.agents.agent_toolkits import create_csv_agent
+from loguru import logger
+from omegaconf import OmegaConf
+
+from utils import (
+    exact_match,
+    load_csv_data,
+    load_indexed_data,
+    return_colembed_array,
+    search_semantic,
+)
+
+# Load the configuration
+cfg = OmegaConf.load("conf/config.yaml")
 
 LOGO_IMAGE = "src/logo.png"
 LOGO_WIDTH = 200
@@ -18,6 +33,19 @@ LAYOUT1X4 = False
 
 st.set_page_config(page_title="Gene and Cell Study Predictor", layout="wide")
 
+df_indexed = load_indexed_data(cfg.data.indexed_path)
+duration_embedding_df = return_colembed_array(
+    df_indexed, column_name=["experiment time", "device"]
+)
+
+# create langchain agent
+agent = create_csv_agent(
+    OpenAI(temperature=0),
+    cfg.data.path,
+    verbose=True,
+    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+)
+
 
 @st.cache_resource
 def load_css(css_path: str) -> None:
@@ -26,6 +54,7 @@ def load_css(css_path: str) -> None:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 
+@st.cache_resource
 def img_to_bytes(img_path: str) -> str:
     """Convert an image file to bytes."""
     img_bytes = Path(img_path).read_bytes()
@@ -53,14 +82,6 @@ def img_to_html(img_path: str, width: Optional[int] = None) -> str:
 
     img_data += ">"
     return img_data
-
-
-# Cache the loading of the CSV file to avoid unnecessary reloads
-@st.cache_resource
-def load_csv_data(file_path: str) -> pd.DataFrame:
-    """Read the CSV file."""
-    df = pd.read_csv(file_path, compression="gzip")
-    return df
 
 
 def main() -> None:
@@ -100,18 +121,18 @@ def main() -> None:
         col_cell_type, col_environment, col_duration, col_target = st.columns(4)
 
         with col_cell_type:
-            cell_type = st.text_area(
+            cell_type_query = st.text_area(
                 "Cell Type", placeholder="Enter the cell type (e.g., HeLa cells)"
             )
 
         with col_environment:
-            environment = st.text_area(
+            environment_query = st.text_area(
                 "Environment",
                 placeholder="Describe the environment condition (e.g., hypoxic)",
             )
 
         with col_duration:
-            duration = st.text_area(
+            duration_query = st.text_area(
                 "Duration", placeholder="Experiment duration (e.g., 3 days)"
             )
 
@@ -125,16 +146,16 @@ def main() -> None:
         col1, col2 = st.columns(2)
 
         with col1:
-            cell_type = st.text_area(
+            cell_type_query = st.text_area(
                 "Cell Type", placeholder="Enter the cell type (e.g., HeLa cells)"
             )
-            environment = st.text_area(
+            environment_query = st.text_area(
                 "Environment",
                 placeholder="Describe the environment condition (e.g., hypoxic)",
             )
 
         with col2:
-            duration = st.text_area(
+            duration_query = st.text_area(
                 "Duration", placeholder="Experiment duration (e.g., 3 days)"
             )
             target = st.text_area(
@@ -153,15 +174,27 @@ def main() -> None:
 
     if explore_studies_btn:
         # Logic to show existing studies
-        st.write("Showing studies for:", cell_type, environment, duration, target)
+        st.write(
+            "Showing studies for:",
+            cell_type_query,
+            environment_query,
+            duration_query,
+            target,
+        )
 
     if run_prediction_btn:
         # Logic to predict the outcome
-        st.write("Predicting outcome for:", cell_type, environment, duration, target)
+        st.write(
+            "Predicting outcome for:",
+            cell_type_query,
+            environment_query,
+            duration_query,
+            target,
+        )
 
     # Ensure that all inputs are provided before any action is taken.
     if (explore_studies_btn or run_prediction_btn) and not (
-        cell_type and environment and duration and target
+        cell_type_query and environment_query and duration_query and target
     ):
         st.error("Please fill in all fields to proceed.")
 
@@ -171,10 +204,40 @@ def main() -> None:
 
         # Convert the PubMed ID to a string so you avoid the comma separator
         data = data.astype({"pubmed_id": str})
+        original_data = data.copy()
+
+        # Filter the data
+        data_cell_type = exact_match(
+            df=original_data, colname="cell type", term=cell_type_query
+        )
+        logger.info(f"exact match resulted in {len(data_cell_type)} rows")
+
+        data_duration = search_semantic(
+            duration_query,
+            original_data,
+            duration_embedding_df["experiment time_embeddings"],
+            top_k=3,
+        )
+
+        data_device = search_semantic(
+            environment_query,
+            original_data,
+            duration_embedding_df["device_embeddings"],
+            top_k=3,
+        )
+
+        common_pubmed_ids = (
+            set(data_cell_type["pubmed_id"])
+            .intersection(set(data_duration["pubmed_id"]))
+            .intersection(set(data_device["pubmed_id"]))
+        )
+
+        # Step 2: Subset the original data based on these common 'pubmed_id' values
+        subset_data = original_data[original_data["pubmed_id"].isin(common_pubmed_ids)]
 
         # Use Streamlit to write the DataFrame to the app
         st.write("Displaying CSV data:")
-        st.dataframe(data)
+        st.dataframe(subset_data)
 
 
 if __name__ == "__main__":
