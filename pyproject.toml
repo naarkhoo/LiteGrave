@@ -21,6 +21,7 @@ omegaconf = "^2.3.0"
 sentence-transformers = "^2.2.2"
 bs4 = "^0.0.1"
 lxml = "^4.9.3"
+inflect = "^7.0.0"
 
 
 [build-system]

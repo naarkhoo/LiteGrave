@@ -2,6 +2,7 @@
 - [ ] Layout
 - [ ] generate new CSV file only on 40 where you are properly use
 ### To-Do
+- [ ] Chat with your jsons
 - [ ] Generate new CSV file using new labels
 - [ ] Add all parameters into the config file
 - [ ] Add proper vector database

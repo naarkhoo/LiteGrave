@@ -1,7 +1,9 @@
 """Utilities for the language model."""
 import ast
+import json
 import os
 import pickle
+import re
 from typing import Any, Dict
 
 import pandas as pd
@@ -22,7 +24,16 @@ def count_tokens(text: str) -> int:
     return len(tokenizer.encode(text))
 
 
-def index_pdf(pdf_file: str, cfg: DictConfig, write: bool = False) -> dict:
+def write_jsonl(data: Dict[str, Any], filepath: str) -> None:
+    """Write the data to a JSONL file."""
+    with open(filepath, "w") as file:
+        for key, value in data.items():
+            # Create a new dictionary with the key included
+            entry = {key: value}
+            file.write(json.dumps(entry) + "\n")
+
+
+def index_pdf(pdf_file: str, cfg: DictConfig, p: Any, write: bool = False) -> dict:
     """Index a PDF file using gorbin."""
     # check if pdf_file exist
     if not os.path.exists(pdf_file):
@@ -80,7 +91,8 @@ def index_pdf(pdf_file: str, cfg: DictConfig, write: bool = False) -> dict:
     for t in documents:
         text = t.page_content
         file_path = t.metadata["file_path"]
-        section = t.metadata["section_title"]
+        raw_section = t.metadata["section_title"]
+        section = clean_section_names(raw_section, p)
         page_number = ast.literal_eval(t.metadata["pages"])[
             0
         ]  # take only the first page
@@ -125,6 +137,45 @@ def index_pdf(pdf_file: str, cfg: DictConfig, write: bool = False) -> dict:
         with open(filename, "wb") as file:
             pickle.dump(data_to_save, file)
 
+        write_jsonl(data_section, filename.replace(".pkl", "_section.jsonl"))
+        write_jsonl(data_page, filename.replace(".pkl", "_page.jsonl"))
+
         logger.info(f"Data saved to {filename}")
 
     return data_to_save
+
+
+def read_jsonl_to_dict(filepath: str) -> dict:
+    """Reads a JSONL file and returns a dictionary."""
+    data_dict = {}
+    with open(filepath, "r") as file:
+        for line in file:
+            # Convert JSON string to dictionary
+            json_obj = json.loads(line.strip())
+            # Extract key and value
+            if json_obj:
+                key, value = next(iter(json_obj.items()))
+                data_dict[key] = value
+            else:
+                print("Warning: Empty JSON object. Skipping this line.")
+    return data_dict
+
+
+def clean_section_names(key: str, p: Any) -> str:
+    """Clean dict key to remove special characters."""
+    # Remove '.', ',', and '-' using regex
+    cleaned_key = re.sub(r"[.,-]", "", key)
+    # Strip leading/trailing whitespace and convert to lowercase
+    cleaned_key = cleaned_key.strip().lower()
+
+    # Split the key into words
+    words = cleaned_key.split()
+
+    # Apply singularization if there are less than three words
+    if len(words) < 4:  # material and methods
+        singularized_words = [
+            p.singular_noun(word) if p.singular_noun(word) else word for word in words
+        ]
+        return " ".join(singularized_words)
+
+    return cleaned_key

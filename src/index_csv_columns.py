@@ -1,4 +1,4 @@
-"""Module to index columns in the dataset."""
+"""Module to index columns of the paper-summarized CSV file."""
 import pandas as pd
 from loguru import logger
 from omegaconf import OmegaConf
