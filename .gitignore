@@ -1,6 +1,15 @@
+#credentials
 creds/creds.env
-poetry.lock
+
+# notebooks
 src/draft.ipynb
+
+# artifacts
+poetry.lock
+
+# data
+data/preprocessed_pdf/*
+data/raw_pdf/*.pdf
 data/*.csv*
 
 # Byte-compiled / optimized / DLL files

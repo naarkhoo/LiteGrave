@@ -1,6 +1,6 @@
 ### In Progress
 - [ ] Layout
-- [ ] Fix the order of search
+- [ ] generate new CSV file only on 40 where you are properly use
 ### To-Do
 - [ ] Generate new CSV file using new labels
 - [ ] Add all parameters into the config file
@@ -11,3 +11,4 @@
 - [x] Use langchain agent to filter and communcate the result
 - [x] Add semantic search with 48 hours
 - [x] Add semantic search for other fields
+- [x] Fix the order of search

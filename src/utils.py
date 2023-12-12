@@ -48,6 +48,20 @@ def exact_match_llm(df: pd.DataFrame, agent: Any, cell_type: str) -> str:
     return response
 
 
+def semantic_search_llm(
+    df: pd.DataFrame, agent: Any, columns: List[str], query: str
+) -> str:
+    """Search for cell type in the database using LLM."""
+    # cell_type = 'Peripheral blood lymphocytes (PBL)'
+    logger.info(f"Searching in columns: {columns}")
+    response = agent.run(
+        f"which rows of columns {','.join(columns)} is equal to {query}"
+        f"return the row ids as a list of integers; if no rows match"
+        f", return an empty list"
+    )
+    return response
+
+
 def create_embeddings(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
     """Create embeddings for a list of columns in a DataFrame."""
     model = SentenceTransformer("bert-base-nli-mean-tokens")
