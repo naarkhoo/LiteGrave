@@ -35,6 +35,7 @@ credentials:
 data:
   pdf_path: data/raw_pdf
   pdf_preprocessed_path: data/preprocessed_pdf
+  labeled_rag_path: data/labeled_data/label_rag.csv
   path: data/m44.csv.gz
   indexed_path: data/indexed_m44.csv.gz
   columns:

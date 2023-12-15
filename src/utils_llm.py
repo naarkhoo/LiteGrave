@@ -4,7 +4,7 @@ import json
 import os
 import pickle
 import re
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import pandas as pd
 from langchain.document_loaders.generic import GenericLoader
@@ -179,3 +179,126 @@ def clean_section_names(key: str, p: Any) -> str:
         return " ".join(singularized_words)
 
     return cleaned_key
+
+
+def filter_by_cumulative_length(
+    examples: List, example_token_counts: List[int], threshold: int
+) -> List:
+    """Filter a list of examples by cumulative length."""
+    paired_examples = sorted(zip(examples, example_token_counts), key=lambda x: x[1])
+
+    # Extract the sorted examples and their corresponding token counts
+    sorted_examples, sorted_token_counts = zip(*paired_examples)
+
+    filtered_examples = []
+    accepted_examples = []
+    current_length = 0
+
+    for example, count in zip(sorted_examples, sorted_token_counts):
+        if current_length + count <= threshold:
+            filtered_examples.append(example)
+            accepted_examples.append(count)
+            current_length += count
+        else:
+            break  # Stop adding more examples once the threshold is reached or exceeded
+
+    return filtered_examples
+
+
+def exclude_section_and_after(
+    pdf_sections_dict: dict, exclude_and_after_list: List[str]
+) -> dict:
+    """Exclude the section and after from the pdf_sections_dict."""
+    keys_to_remove = []
+    found_exclude_part = False
+    for key in pdf_sections_dict.keys():
+        if found_exclude_part:
+            keys_to_remove.append(key)
+            continue
+
+        for exclude_term in exclude_and_after_list:
+            if exclude_term == key:  # found the exact exclude term
+                keys_to_remove.append(key)
+                found_exclude_part = True
+                break
+
+    # Step 2: Remove the keys
+    for key in keys_to_remove:
+        del pdf_sections_dict[key]
+    return pdf_sections_dict
+
+
+def exclude_section_and_before(
+    pdf_sections_dict: dict, exclude_and_before_list: List[str]
+) -> dict:
+    """Exclude the section and before from the pdf_sections_dict."""
+    keys_to_remove = set()
+    # Step 1: Identify keys for removal
+    include_next_keys = False
+    for key in reversed(pdf_sections_dict.keys()):
+        if key in exclude_and_before_list or include_next_keys:
+            keys_to_remove.add(key)
+            include_next_keys = True
+
+    # Step 2: Remove the keys
+    for key in keys_to_remove:
+        del pdf_sections_dict[key]
+
+    return pdf_sections_dict
+
+
+def exclude_terms(pdf_sections_dict: dict, exclude_list: list[str]) -> dict:
+    """Exclude the section and after from the pdf_sections_dict."""
+    # Step 1: Identify keys for removal
+    keys_to_remove = [
+        key
+        for key in pdf_sections_dict
+        if any(exclude_term in key for exclude_term in exclude_list)
+    ]
+
+    # Step 2: Remove the keys
+    for key in keys_to_remove:
+        del pdf_sections_dict[key]
+    return pdf_sections_dict
+
+
+def old_extract_material_method(pdf_sections_dict: dict) -> dict:
+    """Extract the material and method from the pdf_sections_dict."""
+    exclude_and_after_list = ["conclusion", "result"]
+    exclude_and_before_list = ["introduction", "abstract"]
+    # 31708475, 33406425 has early discussion but 20213684 has late discussion
+    exclude_list = ["ethic", "discussion", "declaration of interes", "statistical"]
+    priority_section = ["material and method"]
+
+    relevant_keys = [key for key in pdf_sections_dict if key in priority_section]
+    logger.info(f"relevant_keys: {relevant_keys}")
+    if relevant_keys:
+        filtered_dict = {key: pdf_sections_dict[key] for key in relevant_keys}
+        return filtered_dict
+
+    else:
+        logger.info("going through list of exclusion term")
+        pdf_sections_dict_processed = exclude_section_and_after(
+            pdf_sections_dict, exclude_and_after_list
+        )
+        pdf_sections_dict_processed = exclude_section_and_before(
+            pdf_sections_dict_processed, exclude_and_before_list
+        )
+        pdf_sections_dict_processed = exclude_terms(
+            pdf_sections_dict_processed, exclude_list
+        )
+        return pdf_sections_dict_processed
+
+
+def format_dict_to_string(your_dict: dict) -> str:
+    """Format the dict to string for prompt."""
+    return "\n".join([f"{key}: {value}" for key, value in your_dict.items()])
+
+
+def format_dataframe_to_string(df: pd.DataFrame) -> str:
+    """Formats each row of the DataFrame into a specified string format."""
+    formatted_str = [
+        f"content of section {row['section']} is: {row['text']}\n"
+        for _, row in df.iterrows()
+    ]
+    return "\n".join(formatted_str)
