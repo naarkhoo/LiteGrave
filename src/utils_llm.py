@@ -302,3 +302,17 @@ def format_dataframe_to_string(df: pd.DataFrame) -> str:
         for _, row in df.iterrows()
     ]
     return "\n".join(formatted_str)
+
+
+def return_labelled_data(cfg: DictConfig, type: str) -> pd.DataFrame:
+    """Return the labelled data as a dataframe."""
+    df = pd.read_csv(cfg.data.labeled_rag_path)
+    logger.info(f"reading {len(df)} labeled data")
+    if type not in list(df["key"].unique()):
+        raise ValueError(f"{type} must be {set(df['key'].unique())}")
+
+    # filter the dataframe to only include the device data
+    df_device = df.dropna(subset=["context"]).query(f"key == '{type}' & value != 'Nan'")
+    logger.info(f"found {len(df_device)} labeled data for {type}")
+
+    return df_device
